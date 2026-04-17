@@ -1,12 +1,15 @@
 package com.point.pointaicodemother.controller;
 
 import com.mybatisflex.core.paginate.Page;
+import com.point.pointaicodemother.annotation.AuthCheck;
 import com.point.pointaicodemother.common.BaseResponse;
 import com.point.pointaicodemother.common.ResultUtils;
+import com.point.pointaicodemother.constant.UserConstant;
 import com.point.pointaicodemother.exception.ErrorCode;
 import com.point.pointaicodemother.exception.ThrowUtils;
 import com.point.pointaicodemother.model.dto.UserLoginRequest;
 import com.point.pointaicodemother.model.dto.UserRegisterRequest;
+import com.point.pointaicodemother.model.enums.UserRoleEnum;
 import com.point.pointaicodemother.model.vo.LoginUserVO;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -97,6 +100,7 @@ public class UserController {
      * @return {@code true} 保存成功，{@code false} 保存失败
      */
     @PostMapping("save")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public boolean save(@RequestBody User user) {
         return userService.save(user);
     }
