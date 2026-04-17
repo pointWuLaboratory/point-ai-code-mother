@@ -5,8 +5,11 @@ import com.point.pointaicodemother.common.BaseResponse;
 import com.point.pointaicodemother.common.ResultUtils;
 import com.point.pointaicodemother.exception.ErrorCode;
 import com.point.pointaicodemother.exception.ThrowUtils;
+import com.point.pointaicodemother.model.dto.UserLoginRequest;
 import com.point.pointaicodemother.model.dto.UserRegisterRequest;
+import com.point.pointaicodemother.model.vo.LoginUserVO;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,7 +41,7 @@ public class UserController {
      * @param userRegisterRequest 用户注册请求
      * @return 注册结果
      */
-    @PostMapping("register")
+    @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userRegisterRequest.getUserAccount();
@@ -47,6 +50,22 @@ public class UserController {
         long result = userService.userRegister(userAccount, userPassword, checkPassword);
         return ResultUtils.success(result);
     }
+
+    /**
+     * 用户登录
+     * @param userLoginRequest 用户登录请求
+     * @param request 请求对象
+     * @return 脱敏后的用户登录信息
+     */
+    @PostMapping("/login")
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userLoginRequest.getUserAccount();
+        String userPassword = userLoginRequest.getUserPassword();
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(loginUserVO);
+    }
+
     /**
      * 保存用户。
      *
