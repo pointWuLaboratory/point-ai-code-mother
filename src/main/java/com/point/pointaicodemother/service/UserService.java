@@ -10,4 +10,5 @@ import com.point.pointaicodemother.model.entity.User;
  */
 public interface UserService extends IService<User> {
 
+    long userRegister(String userAccount, String userPassword, String checkPassword);
 }
