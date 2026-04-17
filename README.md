@@ -3,4 +3,5 @@
 自用学习项目，不建议在生产环境使用。
 项目基于 Spring Boot 3.1.1 版本，使用 MySQL 数据库。
 
+- 接口文档：https://localhost:8123/api/doc.html
 - https://mybatis.plus/
