@@ -2,7 +2,7 @@ package com.point.pointaicodemother.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.point.pointaicodemother.model.dto.UserQueryRequest;
+import com.point.pointaicodemother.model.dto.user.UserQueryRequest;
 import com.point.pointaicodemother.model.entity.User;
 import com.point.pointaicodemother.model.vo.LoginUserVO;
 import com.point.pointaicodemother.model.vo.UserVO;

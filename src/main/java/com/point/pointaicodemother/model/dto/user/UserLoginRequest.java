@@ -1,4 +1,4 @@
-package com.point.pointaicodemother.model.dto;
+package com.point.pointaicodemother.model.dto.user;
 
 import lombok.Data;
 
