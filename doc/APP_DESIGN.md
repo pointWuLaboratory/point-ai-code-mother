@@ -49,8 +49,9 @@ create table app
 前端不需要区分用户是否是第一次和该应用对话，始终调用这个接口即可。需要怎么做都交给后端来判断。
 
 
+## 接口测试
 
-```
+```bash
 # 1. 用户登录
 curl -X POST "http://localhost:8123/api/user/login" \
   -H "Content-Type: application/json" \
@@ -70,3 +71,12 @@ curl -G "http://localhost:8123/api/app/chat/gen/code" \
   --no-buffer
 
 ```
+
+## 应用部署
+生成的网站 需要用户直接查看
+把网站的文件同步到一个web服务器上。
+ 
+- 使用serve工具
+- 通过 spring boot 接口
+- 使用 nginx 映射
+
