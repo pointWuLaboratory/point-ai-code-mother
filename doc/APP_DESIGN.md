@@ -41,3 +41,32 @@ create table app
 ```
 - priority 优先级，约定 99为精选应用，这样可以展示高质量的应用，避免用户看到大量测试内容。
 - 添加索引：给deployKey、appName、userId 三个经常用于查询的字段添加索引，以提高查询效率。
+
+
+## 业务流程设计
+
+由于应用的生成过程和 AI 对话是绑定的，提供一个 ChatToGenCode 的应用生成接口，调用之前开发的 AI 代码生成门面完成任务，流式返回给前端。
+前端不需要区分用户是否是第一次和该应用对话，始终调用这个接口即可。需要怎么做都交给后端来判断。
+
+
+
+```
+# 1. 用户登录
+curl -X POST "http://localhost:8123/api/user/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userAccount": "point",
+    "userPassword": "qwertyuiop"
+  }' \
+  -c cookies.txt
+
+# 2. 调用生成代码接口（流式）
+curl -G "http://localhost:8123/api/app/chat/gen/code" \
+  --data-urlencode "appId=403744888758390784" \
+  --data-urlencode "message=做个人博客，代码不超过 20 行" \
+  -H "Accept: text/event-stream" \
+  -H "Cache-Control: no-cache" \
+  -b cookies.txt \
+  --no-buffer
+
+```
