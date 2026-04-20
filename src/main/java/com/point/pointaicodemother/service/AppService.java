@@ -1,13 +1,45 @@
 package com.point.pointaicodemother.service;
 
+import cn.hutool.core.bean.BeanUtil;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.point.pointaicodemother.model.dto.app.AppQueryRequest;
 import com.point.pointaicodemother.model.entity.App;
+import com.point.pointaicodemother.model.entity.User;
+import com.point.pointaicodemother.model.vo.AppVO;
+import com.point.pointaicodemother.model.vo.UserVO;
+import jakarta.annotation.Resource;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * 应用 服务层。
  *
  * @author <a href="https://github.com/PointWu">PointWu</a>
  */
+@Service
 public interface AppService extends IService<App> {
 
+    /**
+     * 获取应用封装类。
+     * @param app
+     * @return
+     */
+    AppVO getAppVO(App app);
+
+    /**
+     * 获取应用封装类列表。
+     * @param appList
+     * @return
+     */
+
+    List<AppVO> getAppVOList(List<App> appList);
+
+    /**
+     * 构建查询条件。
+     * @param appQueryRequest
+     * @return
+     */
+    QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
 }
