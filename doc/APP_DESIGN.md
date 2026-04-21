@@ -79,4 +79,26 @@ curl -G "http://localhost:8123/api/app/chat/gen/code" \
 - 使用serve工具
 - 通过 spring boot 接口
 - 使用 nginx 映射
+    - 修改 nginx 配置文件， http块中添加 serve 块，配置 root 为项目部署根目录
+```bash
+# 静态资源服务器 - 80 端口
+server {
+    listen       80;
+    server_name  localhost;
+    charset      utf-8;
+    charset_types text/css application/javascript text/plain text/xml application/json;
+    # 项目部署根目录
+    root         /Users/yupi/Code/yu-ai-code-mother/tmp/code_deploy;
+    
+    # 处理所有请求
+    location ~ ^/([^/]+)/(.*)$ {
+        try_files /$1/$2 /$1/index.html =404;
+    }
+}
 
+```
+
+启动 nginx 服务，监听 80 端口
+```bash
+brew services start nginx
+```

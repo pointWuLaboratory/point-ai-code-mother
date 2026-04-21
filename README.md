@@ -5,3 +5,7 @@
 
 - 接口文档：https://localhost:8123/api/doc.html
 - https://mybatis.plus/
+
+# 🚀启动
+- 启动 docker 连接mysql
+- 启动 nginx 服务
