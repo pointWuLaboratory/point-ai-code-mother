@@ -14,10 +14,18 @@ const route = useRoute()
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
 
-const menuItems: MenuItem[] = [
-  { key: '/', label: '首页' },
-  { key: '/about', label: '关于我们' },
-]
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
+    { key: '/', label: '首页' },
+    { key: '/about', label: '关于' },
+  ]
+
+  if (loginUserStore.loginUser?.userRole === 'admin') {
+    items.push({ key: '/admin/app/manage', label: '应用管理' })
+  }
+
+  return items
+})
 
 const authModalOpen = ref(false)
 const authMode = ref<'login' | 'register'>('login')
@@ -36,22 +44,26 @@ const registerForm = reactive<API.UserRegisterRequest>({
 })
 
 const selectedKeys = computed(() => {
-  const matched = menuItems.find((item) => route.path === item.key || route.path.startsWith(`${item.key}/`))
+  const matched = menuItems.value.find(
+    (item) => route.path === item.key || route.path.startsWith(`${item.key}/`),
+  )
   return matched ? [matched.key] : []
 })
 
-const userDropdownItems = [
-  { key: 'center', label: '个人中心' },
-  { key: 'logout', label: '退出登录' },
-]
+const userDropdownItems = computed(() => {
+  const items = [{ key: 'center', label: '个人中心' }]
+  if (loginUserStore.loginUser?.userRole === 'admin') {
+    items.push({ key: 'manage', label: '应用管理' })
+  }
+  items.push({ key: 'logout', label: '退出登录' })
+  return items
+})
 
 const displayUserName = computed(() => {
   return loginUserStore.loginUser?.userName || loginUserStore.loginUser?.userAccount || '用户'
 })
 
-const avatarText = computed(() => {
-  return displayUserName.value.slice(0, 1).toUpperCase()
-})
+const avatarText = computed(() => displayUserName.value.slice(0, 1).toUpperCase())
 
 const openAuthModal = (mode: 'login' | 'register' = 'login') => {
   authMode.value = mode
@@ -89,6 +101,7 @@ const handleLogin = async () => {
       message.success('登录成功')
       closeAuthModal()
       resetForms()
+      window.location.reload()
       return
     }
     message.error(res.data.message || '登录失败')
@@ -131,6 +144,11 @@ const handleUserAction = async ({ key }: { key: string }) => {
     return
   }
 
+  if (key === 'manage') {
+    router.push('/admin/app/manage')
+    return
+  }
+
   if (key === 'logout') {
     try {
       const res = await userLogout()
@@ -151,8 +169,8 @@ const handleUserAction = async ({ key }: { key: string }) => {
 <template>
   <div class="global-header">
     <div class="global-header__brand" @click="router.push('/')">
-      <img alt="Point AI Code Mother" class="global-header__logo" src="@/assets/logo.svg" />
-      <span class="global-header__title">Point AI Code Mother</span>
+      <img alt="Point AI Code Mother" class="global-header__logo" src="@/assets/logo.png" />
+      <span class="global-header__title">AI Coding</span>
     </div>
 
     <a-menu
@@ -179,7 +197,6 @@ const handleUserAction = async ({ key }: { key: string }) => {
       </template>
       <template v-else>
         <div class="global-header__guest-actions">
-          <a-button size="large" @click="openAuthModal('register')">注册</a-button>
           <a-button type="primary" size="large" @click="openAuthModal('login')">登录</a-button>
         </div>
       </template>
@@ -194,7 +211,7 @@ const handleUserAction = async ({ key }: { key: string }) => {
       @cancel="closeAuthModal"
     >
       <div class="auth-modal">
-        <div class="auth-modal__title">欢迎来到 Point AI Code Mother</div>
+        <div class="auth-modal__title">欢迎来到一句话 · 呈所想</div>
         <a-tabs v-model:active-key="authMode" centered>
           <a-tab-pane key="login" tab="登录">
             <a-form layout="vertical">
@@ -261,7 +278,7 @@ const handleUserAction = async ({ key }: { key: string }) => {
 }
 
 .global-header__brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
@@ -269,91 +286,63 @@ const handleUserAction = async ({ key }: { key: string }) => {
 }
 
 .global-header__logo {
-  width: 40px;
-  height: 40px;
-  padding: 6px;
-  object-fit: contain;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(22, 119, 255, 0.16), rgba(114, 46, 209, 0.14));
-  box-shadow: 0 10px 24px rgba(22, 119, 255, 0.14);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
 }
 
 .global-header__title {
   color: #0f172a;
   font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
 .global-header__menu {
   flex: 1;
   min-width: 0;
-  justify-content: center;
   background: transparent;
   border-bottom: none;
-}
-
-:deep(.global-header__menu .ant-menu-overflow) {
-  justify-content: center;
-}
-
-:deep(.global-header__menu.ant-menu-horizontal > .ant-menu-item),
-:deep(.global-header__menu.ant-menu-horizontal > .ant-menu-submenu) {
-  top: 0;
-  height: 72px;
-  line-height: 72px;
-  padding-inline: 18px;
-  font-weight: 500;
 }
 
 .global-header__actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  min-width: fit-content;
 }
 
-.global-header__guest-actions {
+.global-header__guest-actions,
+.global-header__user {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 
 .global-header__user {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
+  padding: 6px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
-.global-header__avatar {
-  background: linear-gradient(135deg, #1677ff, #69b1ff);
+
+.global-header__user:hover {
+  background: rgba(22, 119, 255, 0.08);
 }
 
 .global-header__nickname {
   max-width: 120px;
   overflow: hidden;
   color: #0f172a;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.auth-modal {
-  padding-top: 12px;
-}
-
 .auth-modal__title {
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   color: #0f172a;
   font-size: 24px;
   font-weight: 700;
-  text-align: center;
-}
-
-.auth-modal__subtitle {
-  margin-bottom: 24px;
-  color: #64748b;
-  line-height: 1.8;
   text-align: center;
 }
 
@@ -361,33 +350,12 @@ const handleUserAction = async ({ key }: { key: string }) => {
   .global-header {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
-  }
-
-  .global-header__brand,
-  .global-header__actions {
-    width: 100%;
-    justify-content: center;
+    padding-block: 10px;
   }
 
   .global-header__menu {
     order: 3;
     width: 100%;
-  }
-
-  .global-header__guest-actions {
-    width: 100%;
-    justify-content: center;
-  }
-
-  :deep(.global-header__menu .ant-menu-overflow) {
-    justify-content: center;
-  }
-
-  :deep(.global-header__menu.ant-menu-horizontal > .ant-menu-item),
-  :deep(.global-header__menu.ant-menu-horizontal > .ant-menu-submenu) {
-    height: 48px;
-    line-height: 48px;
   }
 }
 </style>

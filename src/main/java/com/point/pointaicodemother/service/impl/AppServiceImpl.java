@@ -90,15 +90,15 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
         Long id = appQueryRequest.getId();
-        String appName = appQueryRequest.getAppName();
-        String cover = appQueryRequest.getCover();
-        String initPrompt = appQueryRequest.getInitPrompt();
-        String codeGenType = appQueryRequest.getCodeGenType();
-        String deployKey = appQueryRequest.getDeployKey();
+        String appName = normalizeBlank(appQueryRequest.getAppName());
+        String cover = normalizeBlank(appQueryRequest.getCover());
+        String initPrompt = normalizeBlank(appQueryRequest.getInitPrompt());
+        String codeGenType = normalizeBlank(appQueryRequest.getCodeGenType());
+        String deployKey = normalizeBlank(appQueryRequest.getDeployKey());
         Integer priority = appQueryRequest.getPriority();
         Long userId = appQueryRequest.getUserId();
-        String sortField = appQueryRequest.getSortField();
-        String sortOrder = appQueryRequest.getSortOrder();
+        String sortField = normalizeBlank(appQueryRequest.getSortField());
+        String sortOrder = normalizeBlank(appQueryRequest.getSortOrder());
         return QueryWrapper.create()
                 .eq("id", id)
                 .like("appName", appName)
@@ -109,6 +109,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 .eq("priority", priority)
                 .eq("userId", userId)
                 .orderBy(sortField, "ascend".equals(sortOrder));
+    }
+
+    private String normalizeBlank(String value) {
+        return StrUtil.isBlank(value) ? null : value;
     }
 
     @Override

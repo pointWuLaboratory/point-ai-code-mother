@@ -1,5 +1,6 @@
 package com.point.pointaicodemother.core.parser;
 
+import cn.hutool.core.util.StrUtil;
 import com.point.pointaicodemother.ai.model.MultiFileCodeResult;
 
 import java.util.regex.Matcher;
@@ -24,15 +25,17 @@ public class MultiFileCodeParser implements CodeParser<MultiFileCodeResult> {
         String cssCode = extractCodeByPattern(codeContent, CSS_CODE_PATTERN);
         String jsCode = extractCodeByPattern(codeContent, JS_CODE_PATTERN);
         // 设置HTML代码
-        if (htmlCode != null && !htmlCode.trim().isEmpty()) {
+        if (StrUtil.isNotBlank(htmlCode)) {
             result.setHtmlCode(htmlCode.trim());
+        } else if (StrUtil.isNotBlank(codeContent)) {
+            result.setHtmlCode(codeContent.trim());
         }
         // 设置CSS代码
-        if (cssCode != null && !cssCode.trim().isEmpty()) {
+        if (StrUtil.isNotBlank(cssCode)) {
             result.setCssCode(cssCode.trim());
         }
         // 设置JS代码
-        if (jsCode != null && !jsCode.trim().isEmpty()) {
+        if (StrUtil.isNotBlank(jsCode)) {
             result.setJsCode(jsCode.trim());
         }
         return result;
