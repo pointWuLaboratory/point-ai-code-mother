@@ -29,6 +29,12 @@ const router = createRouter({
       meta: { title: '应用管理', adminOnly: true },
     },
     {
+      path: '/admin/conversation/manage',
+      name: 'conversationManage',
+      component: () => import('../views/ConversationManageView.vue'),
+      meta: { title: '对话管理', adminOnly: true },
+    },
+    {
       path: '/user/center',
       name: 'userCenter',
       component: () => import('../views/UserCenterView.vue'),

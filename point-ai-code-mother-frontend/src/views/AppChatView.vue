@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js/lib/core'
 import xml from 'highlight.js/lib/languages/xml'
@@ -8,7 +8,8 @@ import javascript from 'highlight.js/lib/languages/javascript'
 import 'highlight.js/styles/github-dark.css'
 import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { deployApp, getAppVoById, getAppVoByIdByAdmin, getChatGenCodeSSEUrl } from '@/api/appController'
+import { deployApp, getAppVoById, getAppVoByIdByAdmin } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import aiAvatar from '@/assets/aiAvatar.png'
 import { useLoginUserStore } from '@/stores/loginUser'
 
@@ -16,7 +17,11 @@ interface ChatMessage {
   id: string
   role: 'user' | 'ai'
   content: string
+  createTime?: string
 }
+
+const HISTORY_PAGE_SIZE = 10
+const API_BASE_URL = 'http://localhost:8123/api'
 
 hljs.registerLanguage('html', xml)
 hljs.registerLanguage('xml', xml)
@@ -28,7 +33,7 @@ const markdown = new MarkdownIt({
   html: true,
   breaks: true,
   linkify: true,
-  highlight(code, language) {
+  highlight(code: string, language: string) {
     const normalizedLanguage = language?.toLowerCase()
     const aliasLanguageMap: Record<string, string> = {
       vue: 'html',
@@ -38,22 +43,21 @@ const markdown = new MarkdownIt({
       tsx: 'javascript',
     }
     const finalLanguage = aliasLanguageMap[normalizedLanguage] || normalizedLanguage
-
     if (finalLanguage && hljs.getLanguage(finalLanguage)) {
       return `<pre class="hljs"><code>${hljs.highlight(code, { language: finalLanguage }).value}</code></pre>`
     }
-
     return `<pre class="hljs"><code>${markdown.utils.escapeHtml(code)}</code></pre>`
   },
 })
 
 const renderMarkdown = (content: string) => markdown.render(content)
-
 const route = useRoute()
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
-
-const appId = computed(() => String(route.params.id || ''))
+const appId = computed(() => {
+  const id = route.params.id
+  return Array.isArray(id) ? String(id[0] || '') : String(id || '')
+})
 const appInfo = ref<API.AppVO>()
 const loading = ref(false)
 const sending = ref(false)
@@ -63,19 +67,20 @@ const previewReady = ref(false)
 const previewLoading = ref(false)
 const previewLoadFailed = ref(false)
 const previewFrameKey = ref(0)
+const historyLoadingMore = ref(false)
+const hasMoreHistory = ref(false)
+const totalHistoryCount = ref(0)
+const historyLoadedCount = ref(0)
+const oldestHistoryCreateTime = ref('')
 const inputMessage = ref('')
 const messages = ref<ChatMessage[]>([])
-const messageContainerRef = ref<HTMLElement>()
-
+const messageContainerRef = ref<HTMLElement | null>(null)
 let eventSource: EventSource | null = null
 
 const isAdmin = computed(() => loginUserStore.loginUser?.userRole === 'admin')
-const isViewMode = computed(() => route.query.view === '1')
 const isOwner = computed(() => {
   const currentUserId = loginUserStore.loginUser?.id
-  if (!appInfo.value?.userId || currentUserId == null) {
-    return false
-  }
+  if (!appInfo.value?.userId || currentUserId == null) return false
   return String(currentUserId) === String(appInfo.value.userId)
 })
 const canEditChat = computed(() => isAdmin.value || isOwner.value)
@@ -85,45 +90,58 @@ const userAvatarText = computed(() => {
   return name.slice(0, 1).toUpperCase()
 })
 const aiAvatarText = computed(() => 'AI')
-const chatInputTooltip = computed(() => {
-  if (canEditChat.value) {
-    return ''
-  }
-  return '无法在别人的作品下对话哦~'
-})
-const deployPreviewUrl = computed(() => {
-  if (!appInfo.value?.deployKey) {
-    return ''
-  }
-  return `http://localhost/${appInfo.value.deployKey}/`
-})
+const chatInputTooltip = computed(() => (canEditChat.value ? undefined : '无法在别人的作品下对话哦~'))
+const deployPreviewUrl = computed(() => (appInfo.value?.deployKey ? `http://localhost/${appInfo.value.deployKey}/` : ''))
 const previewUrl = computed(() => {
-  if (!appInfo.value?.id || !appInfo.value?.codeGenType) {
-    return ''
-  }
+  if (!appInfo.value?.id || !appInfo.value?.codeGenType) return ''
   return `http://localhost:8123/api/static/${appInfo.value.codeGenType}_${appInfo.value.id}/`
 })
-const showPreviewPanel = computed(() => previewReady.value && !!previewUrl.value)
+const shouldDisplayPreviewPanel = computed(() => totalHistoryCount.value >= 2)
 
+const buildChatGenCodeSSEUrl = (params: { appId: string; message: string }) => {
+  const searchParams = new URLSearchParams({
+    appId: params.appId,
+    message: params.message,
+  })
+  return `${API_BASE_URL}/app/chat/gen/code?${searchParams.toString()}`
+}
+const getMessageTime = (value?: string) => {
+  const time = value ? new Date(value).getTime() : 0
+  return Number.isNaN(time) ? 0 : time
+}
+const sortHistory = (list: API.ChatHistory[] = []) => [...list].sort((a, b) => getMessageTime(a.createTime) - getMessageTime(b.createTime))
+const normalizeMessageRole = (record: API.ChatHistory): 'user' | 'ai' => {
+  const messageType = String(record.messageType || '').toLowerCase()
+  return ['user', 'human', 'question', 'input'].some((keyword) => messageType.includes(keyword)) ? 'user' : 'ai'
+}
+const mapHistoryToMessage = (record: API.ChatHistory): ChatMessage => ({
+  id: record.id != null ? String(record.id) : `${record.createTime || Date.now()}_${record.message || ''}`,
+  role: normalizeMessageRole(record),
+  content: record.message || '',
+  createTime: record.createTime,
+})
+const mergeMessages = (incoming: ChatMessage[], existing: ChatMessage[]) => {
+  const map = new Map<string, ChatMessage>()
+  ;[...incoming, ...existing].forEach((item) => map.set(item.id, item))
+  return [...map.values()].sort((a, b) => getMessageTime(a.createTime) - getMessageTime(b.createTime))
+}
+const resetPreviewState = () => {
+  previewReady.value = false
+  previewLoading.value = false
+  previewLoadFailed.value = false
+}
 const checkPreviewAvailability = async () => {
-  if (!previewUrl.value) {
-    previewReady.value = false
-    previewLoadFailed.value = false
+  if (!previewUrl.value || !shouldDisplayPreviewPanel.value) {
+    resetPreviewState()
     return
   }
-
   previewLoading.value = true
   previewLoadFailed.value = false
   try {
-    const response = await fetch(previewUrl.value, {
-      method: 'GET',
-      credentials: 'include',
-    })
+    const response = await fetch(previewUrl.value, { method: 'GET', credentials: 'include' })
     previewReady.value = response.ok
     previewLoadFailed.value = !response.ok
-    if (response.ok) {
-      previewFrameKey.value += 1
-    }
+    if (response.ok) previewFrameKey.value += 1
   } catch {
     previewReady.value = false
     previewLoadFailed.value = true
@@ -131,39 +149,28 @@ const checkPreviewAvailability = async () => {
     previewLoading.value = false
   }
 }
-
 const scrollToBottom = async () => {
   await nextTick()
   const el = messageContainerRef.value
-  if (el) {
-    el.scrollTop = el.scrollHeight
-  }
+  if (el) el.scrollTop = el.scrollHeight
 }
-
 const addMessage = (role: 'user' | 'ai', content: string) => {
-  messages.value.push({
-    id: `${Date.now()}_${Math.random()}`,
-    role,
-    content,
-  })
+  messages.value.push({ id: `${Date.now()}_${Math.random()}`, role, content, createTime: new Date().toISOString() })
   void scrollToBottom()
 }
-
 const loadAppDetail = async () => {
   if (!appId.value) {
     message.error('应用 id 不合法')
     router.push('/')
-    return
+    return false
   }
-
   loading.value = true
   try {
     const request = isAdmin.value ? getAppVoByIdByAdmin : getAppVoById
-    const res = await request({ id: appId.value })
+    const res = await request({ id: Number(appId.value) })
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
-      await checkPreviewAvailability()
-      return
+      return true
     }
     message.error(res.data.message || '获取应用详情失败')
   } catch {
@@ -171,81 +178,92 @@ const loadAppDetail = async () => {
   } finally {
     loading.value = false
   }
+  return false
 }
-
+const loadChatHistory = async (loadMore = false) => {
+  if (!appId.value || (loadMore && (!hasMoreHistory.value || historyLoadingMore.value))) return
+  const container = messageContainerRef.value
+  const previousScrollHeight = container?.scrollHeight || 0
+  if (loadMore) historyLoadingMore.value = true
+  else loading.value = true
+  try {
+    const res = await listAppChatHistory({
+      appId: Number(appId.value),
+      pageSize: HISTORY_PAGE_SIZE,
+      lastCreateTime: loadMore ? oldestHistoryCreateTime.value || undefined : undefined,
+    })
+    if (res.data.code === 0 && res.data.data) {
+      const historyMessages = sortHistory(res.data.data.records || []).map(mapHistoryToMessage)
+      if (loadMore) {
+        messages.value = mergeMessages(historyMessages, messages.value)
+        historyLoadedCount.value += historyMessages.length
+      } else {
+        messages.value = historyMessages
+        historyLoadedCount.value = historyMessages.length
+      }
+      totalHistoryCount.value = Number(res.data.data.totalRow || 0)
+      oldestHistoryCreateTime.value = messages.value[0]?.createTime || ''
+      hasMoreHistory.value = historyLoadedCount.value < totalHistoryCount.value && historyMessages.length > 0
+      if (loadMore && container) {
+        await nextTick()
+        container.scrollTop = container.scrollHeight - previousScrollHeight
+      } else {
+        await scrollToBottom()
+      }
+      await checkPreviewAvailability()
+      return
+    }
+    message.error(res.data.message || '获取对话历史失败')
+  } catch {
+    message.error(loadMore ? '加载更多历史消息失败，请稍后重试' : '获取对话历史失败，请稍后重试')
+  } finally {
+    if (loadMore) historyLoadingMore.value = false
+    else loading.value = false
+  }
+}
 const closeSSE = () => {
   if (eventSource) {
     eventSource.close()
     eventSource = null
   }
 }
-
 const finishSSE = async () => {
   sending.value = false
   closeSSE()
   await loadAppDetail()
+  await loadChatHistory()
 }
-
 const appendAiChunk = async (targetMessageId: string, rawData: string) => {
-  if (!rawData) {
-    return
-  }
-
+  if (!rawData) return
   let chunk = rawData
   try {
     const parsed = JSON.parse(rawData)
-    if (typeof parsed?.d === 'string') {
-      chunk = parsed.d
-    }
-  } catch {
-    // 后端也可能直接返回纯文本，解析失败时按原文本处理
-  }
-
+    if (typeof parsed?.d === 'string') chunk = parsed.d
+  } catch {}
   const targetMessage = messages.value.find((item) => item.id === targetMessageId)
-  if (!targetMessage) {
-    return
-  }
-
+  if (!targetMessage) return
   targetMessage.content += chunk
   await scrollToBottom()
 }
-
 const sendMessage = async (content?: string) => {
   const text = (content ?? inputMessage.value).trim()
   if (!canEditChat.value) {
     message.warning(chatInputTooltip.value)
     return
   }
-  if (!text || !appId.value) {
-    return
-  }
-
+  if (!text || !appId.value) return
   closeSSE()
   sending.value = true
   previewReady.value = false
   previewLoadFailed.value = false
   addMessage('user', text)
   inputMessage.value = ''
-
-  const aiMessage = reactive<ChatMessage>({
-    id: `${Date.now()}_ai`,
-    role: 'ai',
-    content: '',
-  })
+  const aiMessage: ChatMessage = { id: `${Date.now()}_ai`, role: 'ai', content: '', createTime: new Date().toISOString() }
   messages.value.push(aiMessage)
   await scrollToBottom()
-
-  const url = getChatGenCodeSSEUrl({ appId: appId.value, message: text })
-  eventSource = new EventSource(url, { withCredentials: true })
-
-  eventSource.onmessage = async (event) => {
-    await appendAiChunk(aiMessage.id, event.data ?? '')
-  }
-
-  eventSource.addEventListener('done', () => {
-    void finishSSE()
-  })
-
+  eventSource = new EventSource(buildChatGenCodeSSEUrl({ appId: appId.value, message: text }), { withCredentials: true })
+  eventSource.onmessage = async (event) => appendAiChunk(aiMessage.id, event.data ?? '')
+  eventSource.addEventListener('done', () => void finishSSE())
   eventSource.onerror = () => {
     if (eventSource?.readyState === EventSource.CLOSED) {
       void finishSSE()
@@ -256,25 +274,18 @@ const sendMessage = async (content?: string) => {
     message.error('代码生成失败，请稍后重试')
   }
 }
-
 const autoStartIfNeeded = async () => {
-  const autoStart = route.query.autoStart === '1'
-  const initPrompt = String(route.query.initPrompt || '')
-  if (isViewMode.value) {
+  const initPrompt = String(appInfo.value?.initPrompt || '').trim()
+  if (!isOwner.value || totalHistoryCount.value > 0 || !initPrompt || sending.value) {
     return
   }
-  if (autoStart && initPrompt && canEditChat.value) {
-    await sendMessage(initPrompt)
-  }
+  await sendMessage(initPrompt)
 }
-
 const handleDeploy = async () => {
-  if (!appId.value) {
-    return
-  }
+  if (!appId.value) return
   deploying.value = true
   try {
-    const res = await deployApp({ appId: appId.value })
+    const res = await deployApp({ appId: Number(appId.value) })
     if (res.data.code === 0 && res.data.data) {
       deployUrl.value = res.data.data
       message.success('部署成功')
@@ -287,18 +298,14 @@ const handleDeploy = async () => {
     deploying.value = false
   }
 }
-
 onMounted(async () => {
-  if (!loginUserStore.loginUser) {
-    await loginUserStore.fetchLoginUser()
-  }
-  await loadAppDetail()
+  if (!loginUserStore.loginUser) await loginUserStore.fetchLoginUser()
+  const detailLoaded = await loadAppDetail()
+  if (!detailLoaded) return
+  await loadChatHistory()
   await autoStartIfNeeded()
 })
-
-onBeforeUnmount(() => {
-  closeSSE()
-})
+onBeforeUnmount(() => closeSSE())
 </script>
 
 <template>
@@ -314,9 +321,13 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="chat-view__main" :class="{ 'chat-view__main--with-preview': showPreviewPanel }">
+    <div class="chat-view__main" :class="{ 'chat-view__main--with-preview': shouldDisplayPreviewPanel }">
       <div class="chat-panel">
         <div ref="messageContainerRef" class="chat-panel__messages">
+          <div v-if="hasMoreHistory" class="chat-panel__load-more">
+            <a-button type="link" :loading="historyLoadingMore" @click="loadChatHistory(true)">加载更多</a-button>
+          </div>
+
           <a-spin :spinning="loading">
             <div v-if="messages.length === 0" class="chat-panel__empty">
               请输入需求，AI 会开始为你生成网站应用。
@@ -362,7 +373,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div v-if="showPreviewPanel" class="preview-panel">
+      <div v-if="shouldDisplayPreviewPanel" class="preview-panel">
         <div class="preview-panel__header">
           <span>生成后的网页展示</span>
           <a v-if="deployUrl" :href="deployUrl" target="_blank" rel="noreferrer">访问部署地址</a>
@@ -446,6 +457,12 @@ onBeforeUnmount(() => {
   flex: 1;
   padding: 14px;
   overflow: auto;
+}
+
+.chat-panel__load-more {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
 }
 
 .chat-panel__empty {
@@ -642,14 +659,9 @@ onBeforeUnmount(() => {
 .chat-panel__submit {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-top: 12px;
-}
-
-.chat-panel__tip {
-  color: #94a3b8;
-  font-size: 13px;
 }
 
 .preview-panel__header {

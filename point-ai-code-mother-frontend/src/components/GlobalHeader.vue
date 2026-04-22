@@ -22,6 +22,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
   if (loginUserStore.loginUser?.userRole === 'admin') {
     items.push({ key: '/admin/app/manage', label: '应用管理' })
+    items.push({ key: '/admin/conversation/manage', label: '对话管理' })
   }
 
   return items
@@ -54,6 +55,7 @@ const userDropdownItems = computed(() => {
   const items = [{ key: 'center', label: '个人中心' }]
   if (loginUserStore.loginUser?.userRole === 'admin') {
     items.push({ key: 'manage', label: '应用管理' })
+    items.push({ key: 'conversationManage', label: '对话管理' })
   }
   items.push({ key: 'logout', label: '退出登录' })
   return items
@@ -146,6 +148,11 @@ const handleUserAction = async ({ key }: { key: string }) => {
 
   if (key === 'manage') {
     router.push('/admin/app/manage')
+    return
+  }
+
+  if (key === 'conversationManage') {
+    router.push('/admin/conversation/manage')
     return
   }
 
