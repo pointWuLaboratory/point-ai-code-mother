@@ -167,7 +167,7 @@ const loadAppDetail = async () => {
   loading.value = true
   try {
     const request = isAdmin.value ? getAppVoByIdByAdmin : getAppVoById
-    const res = await request({ id: Number(appId.value) })
+    const res = await request({ id: appId.value })
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
       return true
@@ -188,7 +188,7 @@ const loadChatHistory = async (loadMore = false) => {
   else loading.value = true
   try {
     const res = await listAppChatHistory({
-      appId: Number(appId.value),
+      appId: appId.value,
       pageSize: HISTORY_PAGE_SIZE,
       lastCreateTime: loadMore ? oldestHistoryCreateTime.value || undefined : undefined,
     })
@@ -285,7 +285,7 @@ const handleDeploy = async () => {
   if (!appId.value) return
   deploying.value = true
   try {
-    const res = await deployApp({ appId: Number(appId.value) })
+    const res = await deployApp({ appId: appId.value })
     if (res.data.code === 0 && res.data.data) {
       deployUrl.value = res.data.data
       message.success('部署成功')

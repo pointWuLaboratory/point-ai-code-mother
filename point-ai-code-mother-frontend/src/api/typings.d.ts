@@ -1,17 +1,25 @@
 declare namespace API {
+  /**
+   * 后端 Long / long 由于精度问题统一序列化为 string
+   * 前端严禁将其转换为 Number（会丢失精度）
+   */
+  type LongId = string
+  /** 请求入参允许 string/number，但推荐始终传 string */
+  type LongIdInput = string | number
+
   type AppAddRequest = {
     initPrompt?: string
   }
 
   type AppAdminUpdateRequest = {
-    id?: number
+    id?: LongIdInput
     appName?: string
     cover?: string
     priority?: number
   }
 
   type AppDeployRequest = {
-    appId?: number
+    appId?: LongIdInput
   }
 
   type AppQueryRequest = {
@@ -19,23 +27,23 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: number
+    id?: LongIdInput
     appName?: string
     cover?: string
     initPrompt?: string
     codeGenType?: string
     deployKey?: string
     priority?: number
-    userId?: number
+    userId?: LongIdInput
   }
 
   type AppUpdateRequest = {
-    id?: number
+    id?: LongIdInput
     appName?: string
   }
 
   type AppVO = {
-    id?: number
+    id?: LongId
     appName?: string
     cover?: string
     initPrompt?: string
@@ -43,7 +51,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userId?: number
+    userId?: LongId
     createTime?: string
     updateTime?: string
     user?: UserVO
@@ -69,7 +77,7 @@ declare namespace API {
 
   type BaseResponseLong = {
     code?: number
-    data?: number
+    data?: LongId
     message?: string
   }
 
@@ -110,15 +118,15 @@ declare namespace API {
   }
 
   type ChatHistory = {
-    id?: number
+    id?: LongId
     message?: string
     messageType?: string
-    appId?: number
-    userId?: number
+    appId?: LongId
+    userId?: LongId
     createTime?: string
     updateTime?: string
     isDelete?: number
-    parentId?: number
+    parentId?: LongId
   }
 
   type ChatHistoryQueryRequest = {
@@ -126,16 +134,16 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: number
+    id?: LongIdInput
     message?: string
     messageType?: string
-    appId?: number
-    userId?: number
+    appId?: LongIdInput
+    userId?: LongIdInput
     lastCreateTime?: string
   }
 
   type chatToGenCodeParams = {
-    appId: number
+    appId: LongIdInput
     message: string
   }
 
@@ -144,11 +152,11 @@ declare namespace API {
   }
 
   type getAppVOByIdByAdminParams = {
-    id: number
+    id: LongIdInput
   }
 
   type getAppVOByIdParams = {
-    id: number
+    id: LongIdInput
   }
 
   type getUserByIdParams = {
@@ -160,13 +168,13 @@ declare namespace API {
   }
 
   type listAppChatHistoryParams = {
-    appId: number
+    appId: LongIdInput
     pageSize?: number
     lastCreateTime?: string
   }
 
   type LoginUserVO = {
-    id?: number
+    id?: LongId
     userAccount?: string
     userName?: string
     userAvatar?: string
@@ -210,7 +218,7 @@ declare namespace API {
   }
 
   type User = {
-    id?: number
+    id?: LongId
     userAccount?: string
     userPassword?: string
     userName?: string
@@ -241,7 +249,7 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: number
+    id?: LongIdInput
     userName?: string
     userAccount?: string
     userProfile?: string
@@ -255,7 +263,7 @@ declare namespace API {
   }
 
   type UserUpdateRequest = {
-    id?: number
+    id?: LongIdInput
     userName?: string
     userAvatar?: string
     userProfile?: string
@@ -263,7 +271,7 @@ declare namespace API {
   }
 
   type UserVO = {
-    id?: number
+    id?: LongId
     userAccount?: string
     userName?: string
     userAvatar?: string
