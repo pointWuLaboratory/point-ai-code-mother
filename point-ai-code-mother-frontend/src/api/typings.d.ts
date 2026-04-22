@@ -148,7 +148,7 @@ declare namespace API {
   }
 
   type DeleteRequest = {
-    id?: number
+    id?: LongIdInput
   }
 
   type getAppVOByIdByAdminParams = {
@@ -160,11 +160,11 @@ declare namespace API {
   }
 
   type getUserByIdParams = {
-    id: number
+    id: LongIdInput
   }
 
   type getUserVOByIdParams = {
-    id: number
+    id: LongIdInput
   }
 
   type listAppChatHistoryParams = {
