@@ -2,7 +2,9 @@ package com.point.pointaicodemother.ai;
 
 import com.point.pointaicodemother.ai.model.HtmlCodeResult;
 import com.point.pointaicodemother.ai.model.MultiFileCodeResult;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
 public interface AiCodeGeneratorService {
@@ -13,7 +15,8 @@ public interface AiCodeGeneratorService {
      * @return AI的输出结果
      */
     @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
-    HtmlCodeResult generateHtmlCode(String userMessage);
+    HtmlCodeResult generateHtmlCode(@MemoryId int memoryId, @UserMessage String userMessage);
+
 
     /**
      * 生成多文件代码
