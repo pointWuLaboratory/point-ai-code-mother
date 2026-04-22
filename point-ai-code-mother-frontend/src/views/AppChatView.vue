@@ -149,8 +149,6 @@ const addMessage = (role: 'user' | 'ai', content: string) => {
   void scrollToBottom()
 }
 
-const ensureCanView = () => true
-
 const loadAppDetail = async () => {
   if (!appId.value) {
     message.error('应用 id 不合法')
@@ -165,7 +163,6 @@ const loadAppDetail = async () => {
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
       await checkPreviewAvailability()
-      ensureCanView()
       return
     }
     message.error(res.data.message || '获取应用详情失败')
@@ -354,13 +351,12 @@ onBeforeUnmount(() => {
                 v-model:value="inputMessage"
                 :auto-size="{ minRows: 3, maxRows: 5 }"
                 :disabled="!canEditChat"
-                :placeholder="canEditChat ? '继续描述你想生成的页面、功能和交互细节' : '无法在别人的作品下对话哦~'"
+                :placeholder="canEditChat ? '请描述你想生成的网站，越详细效果越好哦' : '无法在别人的作品下对话哦~'"
                 @pressEnter.prevent="sendMessage()"
               />
             </div>
           </a-tooltip>
           <div class="chat-panel__submit">
-            <!-- <span class="chat-panel__tip">用户消息在右，AI 回复在左，支持持续追问</span> -->
             <a-button type="primary" :loading="sending" :disabled="!canEditChat" @click="sendMessage()">发送</a-button>
           </div>
         </div>
@@ -395,8 +391,8 @@ onBeforeUnmount(() => {
 .chat-view {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  height: calc(100vh - 72px - 56px - 40px - 40px);
+  gap: 12px;
+  height: calc(100vh - 72px - 56px - 24px - 24px);
   min-height: 0;
 }
 
@@ -404,11 +400,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 22px;
+  gap: 12px;
+  padding: 14px 18px;
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 20px;
+  border-radius: 18px;
 }
 
 .chat-view__title {
@@ -425,13 +421,13 @@ onBeforeUnmount(() => {
 .chat-view__main {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 12px;
   min-height: 0;
   flex: 1;
 }
 
 .chat-view__main--with-preview {
-  grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 }
 
 .chat-panel,
@@ -440,15 +436,15 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-height: 0;
   height: 100%;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 24px;
+  border-radius: 20px;
   overflow: hidden;
 }
 
 .chat-panel__messages {
   flex: 1;
-  padding: 18px;
+  padding: 14px;
   overflow: auto;
 }
 
@@ -627,12 +623,12 @@ onBeforeUnmount(() => {
 }
 
 .chat-panel__input {
-  padding: 16px;
+  padding: 12px 14px 14px;
   border-top: 1px solid rgba(15, 23, 42, 0.06);
 }
 
 .chat-panel__input-wrap {
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
 .chat-panel__input-wrap--disabled {
@@ -660,7 +656,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 12px 16px;
   color: #111827;
   font-weight: 700;
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);

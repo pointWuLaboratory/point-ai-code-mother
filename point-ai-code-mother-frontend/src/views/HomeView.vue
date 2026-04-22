@@ -36,24 +36,24 @@ const canCreate = computed(() => Boolean(promptText.value.trim()))
 
 const promptCaseList = [
   {
-    label: '波塞风电商页面',
+    label: '企业官网',
     prompt:
-      '创建一个高转化的电商首页，品牌名为波塞风。整体风格要高级、清爽、有科技感。设计一个完整的电商页面，包括顶部导航、主视觉 Banner、热门商品推荐、活动专区、品牌卖点、用户评价和底部页脚等部分。',
+      '帮我创建一个面向科技公司的企业官网，整体风格现代、专业、有未来感。首页需要包含顶部导航、品牌主视觉、核心产品能力介绍、解决方案模块、客户案例展示、合作伙伴 Logo、团队介绍、联系我们和页脚。要求适配移动端，按钮和配色要有明显科技感，文字内容先用中文示例填充。',
   },
   {
-    label: '企业网站',
+    label: '个人博客',
     prompt:
-      '创建一个企业网站，风格要大气、商务、专业。设计一个完整的企业网站首页，包括导航栏、hero 区域、服务介绍、公司优势、客户评价、合作伙伴、联系我们和底部页脚等部分。',
+      '帮我创建一个个人博客网站，适合展示技术文章和成长记录。页面需要有首页 Banner、个人介绍、文章列表、热门标签、精选推荐、时间线、关于我和联系方式等模块。整体风格简洁但有设计感，阅读体验要舒服，支持深色系科技风视觉，并预留文章详情页和分类筛选入口。',
   },
   {
-    label: '电商运营后台',
+    label: '电商首页',
     prompt:
-      '创建一个电商运营后台管理系统，风格要简洁、专业、数据化。设计一个完整的后台首页，包括侧边导航、顶部工具栏、核心数据卡片、订单趋势图、商品销售排行、待办事项和快捷操作区域。',
+      '帮我创建一个高转化的电商首页，主打数码产品销售。需要包含顶部搜索区、分类导航、促销 Banner、爆款商品推荐、限时活动、品牌专区、用户评价、常见问题和底部服务承诺。整体视觉要高级、年轻、科技感强，卡片样式统一，突出价格、优惠信息和立即购买按钮。',
   },
   {
-    label: '暗黑话题社区',
+    label: '活动落地页',
     prompt:
-      '创建一个暗黑风格的话题社区首页，整体视觉要酷、沉浸、有未来感。设计一个完整的社区页面，包括顶部导航、热门话题区、推荐帖子列表、活跃用户、分类标签、发帖入口和社区公告等部分。',
+      '帮我创建一个新品发布活动落地页，适合做营销推广和线索收集。页面需要有震撼的首屏视觉、产品亮点介绍、功能对比、用户收益、使用场景、报名表单、常见问答和底部 CTA。整体风格要炫酷、未来感、带渐变光效，重点突出转化按钮，并兼顾手机端浏览体验。',
   },
 ] as const
 
@@ -190,39 +190,47 @@ onMounted(async () => {
 
 <template>
   <section class="home-view">
-    <div class="hero-section">
-      <div class="hero-section__title-wrap">
-        <h1>一句话 · 呈所想</h1>
-        <p>与 AI 对话轻松创建应用和网站</p>
-      </div>
-
-      <div class="prompt-card">
-        <a-textarea
-          v-model:value="promptText"
-          :auto-size="{ minRows: 4, maxRows: 6 }"
-          placeholder="使用 NoCode 创建一个高效的小工具，帮我计算……"
-          class="prompt-card__textarea"
-        />
-        <div class="prompt-card__footer">
-          <div class="prompt-card__tags">
-            <!-- <a-tag>上传</a-tag>
-            <a-tag>优化</a-tag> -->
-          </div>
-          <a-button type="primary" shape="circle" :loading="creating" :disabled="!canCreate" @click="handleCreateApp">
-            ↑
-          </a-button>
+    <div class="hero-shell">
+      <div class="hero-section">
+        <div class="hero-section__title-wrap">
+          <h1>AI 应用生成平台</h1>
+          <p>一句话轻松创建网站应用</p>
         </div>
-      </div>
 
-      <div class="hero-section__cases">
-        <a-tag
-          v-for="item in promptCaseList"
-          :key="item.label"
-          class="hero-section__case-tag"
-          @click="fillPromptByCase(item.prompt)"
-        >
-          {{ item.label }}
-        </a-tag>
+        <div class="prompt-card">
+          <a-textarea
+            v-model:value="promptText"
+            :auto-size="{ minRows: 4, maxRows: 6 }"
+            placeholder="帮我创建个人博客网站"
+            class="prompt-card__textarea"
+          />
+          <div class="prompt-card__footer">
+            <div class="prompt-card__hint">输入你的网站需求，AI 会自动帮你生成页面原型与代码</div>
+            <a-button
+              type="primary"
+              shape="circle"
+              size="large"
+              :loading="creating"
+              :disabled="!canCreate"
+              @click="handleCreateApp"
+            >
+              ↑
+            </a-button>
+          </div>
+        </div>
+
+        <div class="hero-section__cases">
+          <button
+            v-for="item in promptCaseList"
+            :key="item.label"
+            type="button"
+            class="case-card"
+            @click="fillPromptByCase(item.prompt)"
+          >
+            <span class="case-card__label">{{ item.label }}</span>
+            <span class="case-card__text">{{ item.prompt }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -338,82 +346,161 @@ onMounted(async () => {
 .home-view {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
+}
+
+.hero-shell {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  padding: 24px 0 36px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(89, 110, 255, 0.38), transparent 24%),
+    radial-gradient(circle at 80% 18%, rgba(0, 229, 255, 0.32), transparent 22%),
+    radial-gradient(circle at 50% 75%, rgba(160, 84, 255, 0.2), transparent 30%),
+    linear-gradient(135deg, #060b1f 0%, #0d1633 32%, #121c47 65%, #071126 100%);
+}
+
+.hero-shell::before {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.18;
+  content: '';
+  pointer-events: none;
 }
 
 .hero-section {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  padding: 36px 20px 18px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1280px;
+  padding: 28px 20px 0;
+  margin: 0 auto;
   text-align: center;
 }
 
 .hero-section__title-wrap h1 {
   margin: 0;
-  color: #111827;
-  font-size: clamp(38px, 6vw, 56px);
+  color: #f8fbff;
+  font-size: clamp(40px, 6vw, 64px);
   font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
 }
 
 .hero-section__title-wrap p {
-  margin: 12px 0 0;
-  color: #6b7280;
-  font-size: 16px;
+  margin: 14px 0 0;
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 18px;
+  letter-spacing: 0.04em;
 }
 
 .prompt-card {
-  width: min(100%, 920px);
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  width: min(100%, 980px);
+  padding: 18px 18px 16px;
+  background: rgba(7, 14, 38, 0.62);
+  border: 1px solid rgba(125, 211, 252, 0.18);
   border-radius: 28px;
-  box-shadow: 0 20px 50px rgba(51, 65, 85, 0.08);
+  box-shadow:
+    0 24px 70px rgba(3, 7, 18, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
 }
 
-.prompt-card__textarea :deep(textarea) {
+.prompt-card__textarea {
+  border-radius: 22px;
+}
+
+.prompt-card__textarea :deep(.ant-input) {
+  padding: 8px 2px;
+  color: #f8fafc;
+  font-size: 17px;
+  line-height: 1.8;
   background: transparent;
   border: none;
   box-shadow: none;
-  font-size: 16px;
+}
+
+.prompt-card__textarea :deep(.ant-input::placeholder) {
+  color: rgba(226, 232, 240, 0.52);
+}
+
+.prompt-card__textarea :deep(.ant-input:focus) {
+  box-shadow: none;
 }
 
 .prompt-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 14px;
+  gap: 16px;
+  margin-top: 10px;
 }
 
-.prompt-card__tags {
-  display: flex;
-  gap: 8px;
+.prompt-card__hint {
+  color: rgba(191, 219, 254, 0.82);
+  font-size: 14px;
+  text-align: left;
 }
 
 .hero-section__cases {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: min(100%, 1100px);
+}
+
+.case-card {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-}
-
-.hero-section__case-tag {
-  padding: 8px 12px;
-  border-radius: 999px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  color: #dbeafe;
+  text-align: left;
+  background: rgba(12, 21, 50, 0.56);
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.24);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
-.hero-section__case-tag:hover {
-  color: #1677ff;
-  border-color: #91caff;
-  background: #e6f4ff;
+.case-card:hover {
+  background: rgba(17, 28, 68, 0.88);
+  border-color: rgba(125, 211, 252, 0.42);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.36);
+  transform: translateY(-2px);
+}
+
+.case-card__label {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.case-card__text {
+  color: rgba(219, 234, 254, 0.84);
+  line-height: 1.8;
 }
 
 .section-card {
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 16px 44px rgba(15, 23, 42, 0.06);
 }
 
@@ -480,7 +567,32 @@ onMounted(async () => {
   margin-top: 10px;
 }
 
+@media (max-width: 900px) {
+  .hero-section__cases {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .home-view {
+    gap: 18px;
+  }
+
+  .hero-shell {
+    padding-top: 12px;
+    padding-bottom: 24px;
+  }
+
+  .hero-section {
+    gap: 18px;
+    padding-inline: 16px;
+  }
+
+  .prompt-card__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .section-card__header {
     flex-direction: column;
     align-items: stretch;
